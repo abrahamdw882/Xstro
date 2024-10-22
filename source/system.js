@@ -3,6 +3,7 @@ const { spawn, exec } = require('child_process');
 const path = require('path');
 const os = require('os');
 const { tiny } = require('xstro');
+const axios = require('axios');
 
 command(
  {
@@ -103,3 +104,81 @@ command(
   return await message.send(tiny(`Running Since ${uptime}`));
  }
 );
+
+command(
+    {
+      pattern: 'join',
+      desc: 'Join a group using an invite link',
+      type: 'private',
+    },
+    async (message, match, m, client) => {
+      if (!match) return await message.reply('Please provide a valid invite link.');
+  
+      const inviteLink = match.trim();
+  
+      
+      const linkRegex = /chat\.whatsapp\.com\/([0-9A-Za-z]{20,24})/i;
+      const [_, code] = inviteLink.match(linkRegex) || [];
+  
+      if (!code) {
+        return await message.reply('The invite link provided is invalid. Please check and try again.');
+      }
+  
+      try {
+        
+        const response = await client.groupAcceptInvite(code);
+  
+        if (response) {
+        
+          const groupName = await client.groupMetadata(response); // Fetch group name
+          return await message.reply(`Successfully joined the group: *${groupName.subject}*!`);
+        } else {
+          
+          return await message.reply('invite sent.');
+        }
+      } catch (error) {
+        
+        console.error('Error joining the group:', error);
+  
+       
+        return await message.reply('An error occurred while trying to join the group. Please check the invite link and try again.');
+      }
+    }
+  );
+
+ 
+
+ccommand(
+    {
+      pattern: /^(akira|akiyama|anna|asuna|ayuzawa|boruto|chiho|chitoge|deidara|erza|elaina|eba|emilia|hestia|hinata|inori|isuzu|itachi|itori|kaga|kagura|kaori|keneki|kotori|kurumi|madara|mikasa|miku|minato|naruto|nezuko|sagiri|sasuke|sakura)$/,
+      desc: 'Fetches a random anime image of the specified character.',
+      type: 'private',
+    },
+    async (message, match, m, client) => {
+      const character = match[0]; // Get the character name from the match
+      try {
+        // Fetch the anime images from the API
+        const res = await axios.get(`https://raw.githubusercontent.com/Guru322/api/Guru/BOT-JSON/anime-${character}.json`);
+        const images = res.data; // Assign the response data to the images variable
+  
+        // Check if images array is not empty
+        if (images.length === 0) {
+          await message.reply('No images found for this character.');
+          return;
+        }
+  
+        // Select a random image from the fetched data
+        const randomImage = images[Math.floor(Math.random() * images.length)];
+  
+        // Send the random image to the chat
+        await client.sendMessage(m.chat, {
+          image: { url: randomImage },
+          caption: `_${character}_`,
+          quoted: m,
+        });
+      } catch (error) {
+        console.error('Error fetching anime image:', error);
+        await message.reply('Failed to fetch the image. Please try again later.');
+      }
+    }
+  );
