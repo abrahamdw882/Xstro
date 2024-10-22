@@ -103,3 +103,44 @@ command(
   return await message.send(tiny(`Running Since ${uptime}`));
  }
 );
+
+ommand(
+    {
+      pattern: 'join',
+      desc: 'Join a group using an invite link',
+      type: 'private',
+    },
+    async (message, match, m, client) => {
+      if (!match) return await message.reply('Please provide a valid invite link.');
+  
+      const inviteLink = match.trim();
+  
+      
+      const linkRegex = /chat\.whatsapp\.com\/([0-9A-Za-z]{20,24})/i;
+      const [_, code] = inviteLink.match(linkRegex) || [];
+  
+      if (!code) {
+        return await message.reply('The invite link provided is invalid. Please check and try again.');
+      }
+  
+      try {
+        
+        const response = await client.groupAcceptInvite(code);
+  
+        if (response) {
+        
+          const groupName = await client.groupMetadata(response); // Fetch group name
+          return await message.reply(`Successfully joined the group: *${groupName.subject}*!`);
+        } else {
+          
+          return await message.reply('Failed to join the group. The invite link may be invalid or expired.');
+        }
+      } catch (error) {
+        
+        console.error('Error joining the group:', error);
+  
+       
+        return await message.reply('An error occurred while trying to join the group. Please check the invite link and try again.');
+      }
+    }
+  );
